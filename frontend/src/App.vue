@@ -35,10 +35,30 @@
       </button>
     </div>
   </div>
-  <!-- vista de joc -->
-   <div v-else-if="vista === 'game'">
 
-   </div>
+
+  <!-- vista de joc -->
+  <div v-else-if="vista === 'game'">
+    <div id="jugador" v-if="!esEspectador">
+      <!-- Div on mostrem la informació de la partida (els textos)-->
+        <div id="partida">
+          
+        </div>
+      <!--Div on mostrem el temps restant de la partida-->
+        <div id="tempsRestant">
+
+        </div>
+      <!--Div on llistem els usuaris de la partida i els accerts i errors d'aquests-->
+        <div id="llistaUsers">
+
+        </div>
+    </div>
+    <div id="espectador" v-else>
+        <h1>ETS ESPECTADOR, ESPERA A QUE ACABIN LA PARTIDA</h1>
+    </div>    
+  </div>
+
+
   <!-- vista de endgame-->
    <div v-else-if="vista === 'endGame'">
 
@@ -89,6 +109,36 @@
     /*compte enrrere de 5 segons, si es compleix sense interrupcions, envia comença el joc */
   }
 
+  /*---- FUNCIONS I VARIABLES QUE UTILIZAREM AL GAME ----*/
+  //1.VARIABLES
+  const esEspectador = ref(false); //Aquesta variable controla si el jugador està jugant o si es espectador
+
+  //2.FUNCIONS
+  /*Äquesta funció s'executa quan el servidor emet 'JocIniciat' 
+  Rep la llista de jugadors que si que jugaran la partida*/
+  function comencarElJoc(llistaJugadors){
+    console.log("Rebut 'JocIniciat' amb la llista:", llistaJugadors );
+
+    //Canviem la vista general de 'lobby' a 'game'
+    vista.value='game';
+
+    //Mirem el rol del jugador que ens envia el servidor
+    const rolJugador = llistaJugadors.find(p => p.rol ===jugador.value.rol);
+
+    //Un cop tenim el rol del jugador gestionem si és espectador o si és jugador
+    if(rolJugador === 'jugador'){
+      esEspectador.value = false;
+      console.log("Rol assignat: JUGADOR");
+    }else{
+      esEspectador.value = true;
+      console.log("Rol assignat: ESPECTADOR");
+    }
+    //TODO: DECLARAR EL SOCKET.ON('JOCINICIAT', LLISTAJUGADORS)
+  }
+  //TODO: FALTA TRUCAR A LA VARIABLE TEMPS I GESTIONAR EL COOLDOWN DEL TEMPS, QUAN EL TEMPS ARRIBA A 0 CANVIA DE VISTA
+  //TODO: FALTA QUE EL USUARI PUGI JUGAR
+  //TODO: FALTA LLISTAR ELS JUGADORS I ELS ERRORS O ACCERTS QUE FAIGIN
+  
 </script>
 
 <style scoped>
