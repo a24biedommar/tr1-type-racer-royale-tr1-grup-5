@@ -91,6 +91,12 @@
   const tempsRestant = ref(0);//El temps que es mostrarà per pantalla
   let timerInstance = null;//Variable per guardar l'interval
   
+  socket.on("JocIniciat", (dadesJoc) => {
+      console.log("Rebut 'JocIniciat' amb: ", dadesJoc);
+      comencarElJoc(dadesJoc)
+  });
+
+
 //funcions
   function tryConn(){
     var objJugador = {...jugador.value, id: 0, err: 0, frases: 0, rol:''};
@@ -104,14 +110,6 @@
     }
     
     isConnected.value = true;
-    
-    // Simulació de la crida del servidor
-    if (socket) {
-      socket.on("JocIniciat", (dadesJoc) => {
-        console.log("Rebut 'JocIniciat' amb: ", dadesJoc);
-        comencarElJoc(dadesJoc)
-      });
-    }
   }
 
   /*---- FUNCIONS QUE UTILIZAREM AL GAME ----*/
