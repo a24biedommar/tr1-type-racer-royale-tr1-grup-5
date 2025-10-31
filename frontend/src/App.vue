@@ -1,5 +1,4 @@
 <template>
-  <router-view />
   <!-- vista de lobby -->
   <div v-if="vista === 'lobby'">
     <div v-if="isConnected === false">
@@ -51,10 +50,12 @@
           />
 
         </div>
-      <!--Div on mostrem el temps restant de la partida-->
-        <div id="tempsRestant">
-          <h1>Temps Restant:{{tempsRestant}}s</h1>
-        </div>
+      <!--Fem Servir el component temps Restant per mostrar el temps -->
+        <TempsRestant 
+          :tempsInicial="tempsDePartida"
+          @tempsAcabat="acabarPartida"
+        />
+
       <!--Div on llistem els usuaris de la partida i els accerts i errors d'aquests-->
         <div id="ranquing">
           <!-- Aquí anirà el rànquing -->
@@ -69,7 +70,8 @@
 
   <!-- vista de endgame-->
    <div v-else-if="vista === 'endGame'">
-
+      <h1>Partida acabada!</h1>
+      <!-- Aquí anirien els resultats -->
    </div>
 
 </template>
@@ -77,24 +79,29 @@
 <script setup>
 //imports
   import { ref } from 'vue';
-  // Importem el nostre nou component de joc
+  // Importem els dos components del joc
   import GameEngine from './components/Game/GameEngine.vue'; 
+  import TempsRestant from './components/Game/TempsRestant.vue';
 
 //variables
   const vista = ref('lobby');
   const isConnected = ref(false);
   const jugador = ref({name: '', rol: '', state: 'notReady'})
   const jugadors = ref([]);
+  const isAdmin = ref(true); // Canvia a 'false' per provar com a jugador
+  const isMajority = ref(true); // Canvia a 'false' per desactivar el botó
 
   //-- VARIABLES DEL GAME --
   const esEspectador = ref(false); //Aquesta variable controla si el jugador està jugant o si es espectador
-  const tempsRestant = ref(0);//El temps que es mostrarà per pantalla
-  let timerInstance = null;//Variable per guardar l'interval
+  const tempsDePartida = ref(0); //Aquesta variable guarda el temps que dura una partida
   
-  socket.on("JocIniciat", (dadesJoc) => {
-      console.log("Rebut 'JocIniciat' amb: ", dadesJoc);
-      comencarElJoc(dadesJoc)
-  });
+  //Rebem que el joc s'ha iniciat i executem la funcio comencarElJoc
+  if (socket) {
+    socket.on("JocIniciat", (dadesJoc) => {
+        console.log("Rebut 'JocIniciat' amb: ", dadesJoc);
+        comencarElJoc(dadesJoc)
+    });
+  }
 
 
 //funcions
@@ -102,10 +109,8 @@
     var objJugador = {...jugador.value, id: 0, err: 0, frases: 0, rol:''};
     jugadors.value.push(objJugador);
     
-    // 2. Fes servir .find() (retorna objecte) en lloc de .filter() (retorna array)
     const jugadorTrobat = jugadors.value.find((jug) => jug.name === objJugador.name);
     if (jugadorTrobat) {
-      // Assignem l'objecte trobat (amb id, etc.) al nostre ref
       jugador.value = jugadorTrobat; 
     }
     
@@ -115,48 +120,50 @@
   /*---- FUNCIONS QUE UTILIZAREM AL GAME ----*/
   function comencarElJoc(dadesJoc){
     const llistaJugadors = dadesJoc.jugadores;
-    const tempsDePartida = dadesJoc.temps;
+    
+    //Guardem el temps d'inici de la partida en una variable
+    tempsDePartida.value = dadesJoc.temps; 
 
     console.log("Rebut 'JocIniciat' amb la llista:", llistaJugadors );
-    console.log("Durada de la partida: ", tempsDePartida, "s");
+    console.log("Durada de la partida: ", tempsDePartida.value, "s");
 
+    //Cambiem la vista del joc
     vista.value='game';
 
+    //Busquem quin rol té el jugadorActual
     const jugadorActual = llistaJugadors.find(p => p.id === jugador.value.id);
 
-    if(jugadorActual && jugadorActual.rol === 'jugador'){
+    //Si és jugador mostrem el joc si no mostrem el h1 del espectador
+    if(jugadorActual.rol === 'jugador'){
       esEspectador.value = false;
       console.log("Rol assignat: JUGADOR");
     }else{
       esEspectador.value = true;
       console.log("Rol assignat: ESPECTADOR");
     }
-
-    iniciarComptador(tempsDePartida);
   }
 
-  function iniciarComptador(tempsInici){
-    tempsRestant.value = tempsInici; 
-    timerInstance = setInterval(() =>{
-      if(tempsRestant.value > 0){
-        tempsRestant.value--;
-      } else{
-        acabarPartida()
-      }
-    }, 1000);
-  }
-
+  //Funcio que es crida en acabar la partida
   function acabarPartida(){
-    clearInterval(timerInstance);
-    timerInstance = null;
-
+    //Mostrem per consola que s'ha acabat el temps de la partida
     console.log("Temps Acabat! Mostrem els resultats")
 
+    //Cambiem la vista a endGame
     vista.value = 'endGame';
 
-    if (socket) {
-      socket.emit('partidaAcabada');
-    }
+    //Enviem al servidor amb un emit que la partida s'ha acabat
+    socket.emit('partidaAcabada');
+
+  }
+
+  function setAdmin(id) {
+    console.log("Fer admin a:", id);
+  }
+  function deletePlayer(id) {
+    console.log("Esborrar jugador:", id);
+  }
+  function startGame() {
+    console.log("Començar partida");
   }
 </script>
 
@@ -174,3 +181,4 @@
     background-color: red;
   }
 </style>
+
